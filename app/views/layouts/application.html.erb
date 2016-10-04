@@ -1,0 +1,97 @@
+<html>
+<head>
+  <title>Tempsense</title>
+  <%= stylesheet_link_tag    'application', media: 'all', 'data-turbolinks-track' => true %>
+  <%= javascript_include_tag 'application', 'data-turbolinks-track' => true %>
+  <%= csrf_meta_tags %>
+  <script src="https://cdn.pubnub.com/sdk/javascript/pubnub.4.0.10.js"></script>
+<script   src="https://code.jquery.com/jquery-3.1.0.min.js"   integrity="sha256-cCueBR6CsyA4/9szpPfrX3s49M9vUU5BgtiJj06wt/s="   crossorigin="anonymous"></script>
+<%= javascript_tag do %>
+  temperature_data = <%= temperature_data.html_safe %>;
+
+  var x_data = [], y_data =[], x_data_2 =[], y_data_2=[]; 
+    for (var i = 0; i < temperature_data.length ; i += 1) {
+
+    console.log(temperature_data[i]['date']);
+    console.log(temperature_data[i]['temp']);
+     
+        x_data.push(new Date(temperature_data[i]['date']));
+        y_data.push(temperature_data[i]['temp']);
+    }
+<% end %>  
+<script>
+  pubnub = new PubNub({
+        subscribeKey : 'sub-c-6dd7c098-7e9b-11e6-9717-0619f8945a4f',
+        auth_key : 'Inlosol',
+        uuid : "javascript"
+      });
+       
+    pubnub.addListener({
+        status: function(statusEvent) {
+            if (statusEvent.category === "PNConnectedCategory") {
+            }
+        },
+        message: function(message) {
+            temperature_data.push(message.message["temperature"])
+            chart.load({
+                columns: [
+                    temperature_data
+                ],
+                unload: 'temperature'
+            });
+            console.log("New Message!!",message.message["temperature"]);
+        },
+        presence: function(presenceEvent) {
+
+        }
+    })      
+    pubnub.subscribe({
+        channels: ['backfront'] 
+    }); 
+
+</script>
+
+<script>
+  x_data.unshift("x")
+  y_data.unshift("temp")
+  var chart = c3.generate({
+    padding: {
+        top: 40,
+        right: 100,
+        bottom: 40,
+        left: 100,
+    },
+    data: {
+        x: 'x',
+        columns: [x_data, y_data],
+        type: 'line'
+    },
+    axis: {
+        x: {
+            label: "date",
+            type: 'timeseries',
+            tick: {
+                count: 5
+            }
+        },
+        y: {
+            label: "temperature"
+        }
+    },
+    zoom: {
+        enabled: true
+    },
+    subchart: {
+        show: true
+    }
+
+});
+
+</script>
+</head>
+<body>
+
+<%= yield %>
+
+</body>
+</html>
